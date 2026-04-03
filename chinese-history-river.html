@@ -12,7 +12,8 @@
       --water-deep: #1a4a5c;
       --water-mid: #2d6b7f;
       --water-light: #4a9aaa;
-      --foam: rgba(255, 255, 255, 0.35);
+      --foam: rgba(255, 255, 255, 0.62);
+      --foam-soft: rgba(200, 235, 255, 0.45);
       --ink: #1a1f24;
       --paper: #f4efe4;
       --shadow: rgba(0, 0, 0, 0.18);
@@ -342,10 +343,10 @@
 
     @keyframes waveDriftV {
       from { transform: translateY(0); }
-      to { transform: translateY(80px); }
+      to { transform: translateY(96px); }
     }
     .wave-shift {
-      animation: waveDriftV 12s linear infinite;
+      animation: waveDriftV 9s linear infinite;
     }
   </style>
 </head>
@@ -390,24 +391,33 @@
             <stop offset="0%" stop-color="var(--bank)" />
             <stop offset="100%" stop-color="#5a7a55" />
           </linearGradient>
-          <pattern id="waves" width="32" height="64" patternUnits="userSpaceOnUse" patternContentUnits="userSpaceOnUse">
+          <pattern id="waves" width="40" height="52" patternUnits="userSpaceOnUse" patternContentUnits="userSpaceOnUse">
             <path
               class="wave-shift"
-              d="M0 32 Q16 22 32 32 Q48 42 64 32"
-              transform="scale(0.5 1)"
+              d="M0 24 Q10 12 20 24 T40 24"
               fill="none"
               stroke="var(--foam)"
-              stroke-width="1.8"
-              opacity="0.5"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              opacity="0.9"
             />
             <path
               class="wave-shift"
-              d="M0 48 Q16 38 32 48"
-              transform="translate(8 0)"
+              d="M0 36 Q20 26 40 36"
+              fill="none"
+              stroke="var(--foam-soft)"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              opacity="0.8"
+            />
+            <path
+              class="wave-shift"
+              d="M4 46 Q20 40 36 46"
               fill="none"
               stroke="var(--foam)"
-              stroke-width="1"
-              opacity="0.35"
+              stroke-width="1.35"
+              stroke-linecap="round"
+              opacity="0.65"
             />
           </pattern>
         </defs>
@@ -438,8 +448,8 @@
         <path
           d="M138 130 L422 130 L428 3510 L132 3510 Z"
           fill="url(#waves)"
-          opacity="0.45"
-          style="mix-blend-mode: overlay;"
+          opacity="0.78"
+          style="mix-blend-mode: soft-light;"
         />
 
         <!-- 河中轴线装饰 -->
