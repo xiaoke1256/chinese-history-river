@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>中国历史长河图</title>
+  <style>
+    :root {
+      --sky-top: #87a8c9;
+      --sky-mid: #c4d4e8;
+      --bank: #3d4f3a;
+      --water-deep: #1a4a5c;
+      --water-mid: #2d6b7f;
+      --water-light: #4a9aaa;
+      --foam: rgba(255, 255, 255, 0.35);
+      --ink: #1a1f24;
+      --paper: #f4efe4;
+      --shadow: rgba(0, 0, 0, 0.18);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+      background: linear-gradient(90deg, var(--sky-top) 0%, var(--sky-mid) 40%, #a8c4b8 75%, #6b8f7a 100%);
+      color: var(--ink);
+    }
+
+    body.lang-en {
+      font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    .lang-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 12px;
+    }
+
+    .lang-bar .lang-btn {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      background: rgba(255, 255, 255, 0.5);
+      padding: 6px 16px;
+      font-size: 0.88rem;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    .lang-bar .lang-btn:first-of-type {
+      border-radius: 10px 0 0 10px;
+    }
+
+    .lang-bar .lang-btn:last-of-type {
+      border-radius: 0 10px 10px 0;
+      margin-left: -1px;
+    }
+
+    .lang-bar .lang-btn[aria-pressed="true"] {
+      background: rgba(255, 255, 255, 0.92);
+      font-weight: 700;
+      border-color: var(--water-deep);
+      z-index: 1;
+    }
+
+    .lang-bar .lang-btn:focus-visible {
+      outline: 2px solid var(--water-deep);
+      outline-offset: 2px;
+    }
+
+    header {
+      text-align: center;
+      padding: clamp(16px, 4vw, 28px) 16px 8px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.5rem, 4vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--ink);
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    header p {
+      margin: 0;
+      font-size: 0.92rem;
+      opacity: 0.85;
+      max-width: 36em;
+      margin-inline: auto;
+      line-height: 1.5;
+    }
+
+    .zoom-rail {
+      flex: 0 0 auto;
+      position: sticky;
+      top: 12px;
+      align-self: flex-start;
+      z-index: 1;
+    }
+
+    .zoom-rail-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.55);
+      padding: 14px 10px;
+      border-radius: 14px;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .zoom-rail-title {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      user-select: none;
+      color: var(--ink);
+    }
+
+    .zoom-slider {
+      -webkit-appearance: slider-vertical;
+      appearance: slider-vertical;
+      width: 28px;
+      height: min(58vh, 420px);
+      min-height: 160px;
+      accent-color: var(--water-deep);
+      cursor: pointer;
+    }
+
+    .main-layout {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: center;
+      gap: clamp(16px, 3vw, 28px);
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 16px 8px;
+    }
+
+    .main-river-column {
+      flex: 1 1 360px;
+      min-width: 0;
+      max-width: min(560px, 100%);
+    }
+
+    .wrap {
+      overflow-x: hidden;
+      overflow-y: visible;
+      padding: 8px 12px 28px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .timeline-host {
+      width: min(520px, 100%);
+      margin: 0 auto;
+      padding: 0 0 16px;
+    }
+
+    /* 不设 height:auto，否则部分浏览器下 SVG 按 viewBox 比例算高，会盖掉脚本写入的像素高度，导致缩放无效 */
+    .river-svg {
+      display: block;
+      width: 100%;
+      aspect-ratio: 560 / 3600;
+      filter: drop-shadow(0 8px 16px var(--shadow));
+    }
+
+    .dynasty-hit {
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .dynasty-hit:hover,
+    .dynasty-hit:focus {
+      opacity: 0.92;
+    }
+
+    .year-tick {
+      fill: rgba(26, 31, 36, 0.75);
+      font-family: inherit;
+    }
+
+    .dyn-label {
+      fill: #fff;
+      font-weight: 700;
+    }
+
+    .panel {
+      padding: 14px 18px;
+      background: var(--paper);
+      border-radius: 14px;
+      box-shadow: 0 4px 20px var(--shadow);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .detail-modal {
+      width: 100%;
+      max-width: none;
+      height: 100%;
+      max-height: none;
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .detail-modal::backdrop {
+      background: rgba(18, 28, 38, 0.48);
+      backdrop-filter: blur(3px);
+    }
+
+    .detail-modal__wrap {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px;
+      box-sizing: border-box;
+    }
+
+    .detail-modal__panel {
+      position: relative;
+      width: min(400px, 100%);
+      max-height: min(80vh, 560px);
+      overflow-y: auto;
+      margin: 0;
+      padding-top: 12px;
+    }
+
+    .detail-modal__panel h2 {
+      padding-right: 44px;
+    }
+
+    .detail-modal__close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.06);
+      color: var(--ink);
+      font-size: 1.35rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .detail-modal__close:hover {
+      background: rgba(0, 0, 0, 0.1);
+    }
+
+    .detail-modal__close:focus-visible {
+      outline: 2px solid var(--water-deep);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 860px) {
+      .main-layout {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .zoom-rail {
+        position: static;
+        align-self: stretch;
+        order: -1;
+      }
+
+      .zoom-rail-inner {
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        padding: 10px 14px;
+        gap: 16px;
+      }
+
+      .zoom-rail-title {
+        writing-mode: horizontal-tb;
+        letter-spacing: 0.08em;
+        flex-shrink: 0;
+      }
+
+      .zoom-slider {
+        height: 28px;
+        width: min(72vw, 300px);
+        min-height: 0;
+        -webkit-appearance: auto;
+        appearance: auto;
+      }
+
+      .main-river-column {
+        max-width: none;
+      }
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+      color: var(--water-deep);
+    }
+
+    .panel .dynasty-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .panel .years {
+      font-size: 0.95rem;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .panel .blurb {
+      margin: 0;
+      line-height: 1.65;
+      font-size: 0.95rem;
+    }
+
+    .hint {
+      text-align: center;
+      font-size: 0.82rem;
+      opacity: 0.75;
+      padding: 0 16px 24px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .wave-shift { animation: none !important; }
+    }
+
+    @keyframes waveDriftV {
+      from { transform: translateY(0); }
+      to { transform: translateY(80px); }
+    }
+    .wave-shift {
+      animation: waveDriftV 12s linear infinite;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="lang-bar" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" id="langZh" aria-pressed="true">中文</button>
+      <button type="button" class="lang-btn" id="langEn" aria-pressed="false">English</button>
+    </div>
+    <h1 id="uiTitle">中国历史长河图</h1>
+    <p id="uiSubtitle">自传说与考古中的早期王朝至当代，以「长河」自上而下喻时间之流。左侧竖条调节时间轴缩放，上下滚动浏览；点击河中任一朝代，将以弹窗显示简介。</p>
+  </header>
+
+  <div class="main-layout">
+    <div class="zoom-rail">
+      <label class="zoom-rail-inner" for="zoom">
+        <span class="zoom-rail-title" id="uiZoomLabel">时间轴缩放</span>
+        <input
+          id="zoom"
+          class="zoom-slider"
+          type="range"
+          min="0.55"
+          max="1.65"
+          step="0.05"
+          value="1"
+          orient="vertical"
+          aria-label="时间轴缩放"
+        />
+      </label>
+    </div>
+    <div class="main-river-column">
+      <div class="wrap" id="scrollWrap">
+        <div class="timeline-host" id="host">
+      <svg id="riverSvg" class="river-svg" viewBox="0 0 560 3600" preserveAspectRatio="xMidYMin meet" role="img" aria-label="中国历史长河时间轴（竖向）">
+        <defs>
+          <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="var(--water-deep)" />
+            <stop offset="45%" stop-color="var(--water-mid)" />
+            <stop offset="100%" stop-color="var(--water-light)" />
+          </linearGradient>
+          <linearGradient id="bankGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="var(--bank)" />
+            <stop offset="100%" stop-color="#5a7a55" />
+          </linearGradient>
+          <pattern id="waves" width="32" height="64" patternUnits="userSpaceOnUse" patternContentUnits="userSpaceOnUse">
+            <path
+              class="wave-shift"
+              d="M0 32 Q16 22 32 32 Q48 42 64 32"
+              transform="scale(0.5 1)"
+              fill="none"
+              stroke="var(--foam)"
+              stroke-width="1.8"
+              opacity="0.5"
+            />
+            <path
+              class="wave-shift"
+              d="M0 48 Q16 38 32 48"
+              transform="translate(8 0)"
+              fill="none"
+              stroke="var(--foam)"
+              stroke-width="1"
+              opacity="0.35"
+            />
+          </pattern>
+        </defs>
+
+        <!-- 远景（左侧天际） -->
+        <path d="M0 0 H560 V420 L420 380 Q280 340 140 400 L0 450 Z" fill="rgba(100,130,150,0.22)" />
+        <path d="M0 0 H560 V280 L380 240 Q260 220 120 280 L0 320 Z" fill="rgba(80,110,130,0.18)" />
+
+        <!-- 右岸（东侧） -->
+        <path
+          d="M560 0 V3600 H420 V120 Q500 900 430 1800 T420 3500 L430 3600 H560 Z"
+          fill="url(#bankGrad)"
+          opacity="0.93"
+        />
+        <!-- 左岸（西侧） -->
+        <path
+          d="M0 0 H160 V140 Q90 800 130 1600 T125 3400 L120 3600 H0 Z"
+          fill="url(#bankGrad)"
+          opacity="0.93"
+        />
+
+        <!-- 河道水体 -->
+        <path
+          id="riverBody"
+          d="M130 120 Q145 900 138 1800 T135 3480 L135 3520 Q280 3515 425 3520 L428 3480 Q420 1200 432 600 T425 120 L420 120 Q280 110 130 120 Z"
+          fill="url(#waterGrad)"
+        />
+        <path
+          d="M138 130 L422 130 L428 3510 L132 3510 Z"
+          fill="url(#waves)"
+          opacity="0.45"
+          style="mix-blend-mode: overlay;"
+        />
+
+        <!-- 河中轴线装饰 -->
+        <path
+          d="M278 160 Q282 900 278 1800 T278 3440"
+          fill="none"
+          stroke="rgba(255,255,255,0.18)"
+          stroke-width="1.5"
+          stroke-dasharray="8 12"
+        />
+
+        <g id="ticks"></g>
+        <g id="dynasties"></g>
+        </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="detailDialog" class="detail-modal" aria-labelledby="detailTitle">
+    <div class="detail-modal__wrap">
+      <div class="detail-modal__panel panel" id="detail" role="document" aria-live="polite">
+        <button type="button" class="detail-modal__close" id="detailDialogClose" aria-label="关闭">×</button>
+        <h2 id="detailTitle">当前选中</h2>
+        <div class="dynasty-name" id="d-name">（请点击河中任一朝代）</div>
+        <div class="years" id="d-years"></div>
+        <p class="blurb" id="d-blurb">自上而下，上古在川首、当代在川尾；每一段色带对应一个历史阶段，波纹象征岁月推移。年代为学界常用近似范围，仅供通览。</p>
+      </div>
+    </div>
+  </dialog>
+
+  <p class="hint" id="uiHint">提示：页面向下滚动即顺流而下进入更近的时代；左侧竖向滑块可拉长或压缩整条时间河（窄屏下为横向滑块）。点击河中朝代可打开简介弹窗。</p>
+
+  <script>
+    (function () {
+      const STR = {
+        zh: {
+          pageTitle: "中国历史长河图",
+          title: "中国历史长河图",
+          subtitle:
+            "自传说与考古中的早期王朝至当代，以「长河」自上而下喻时间之流。左侧竖条调节时间轴缩放，上下滚动浏览；点击河中任一朝代，将以弹窗显示简介。",
+          zoomLabel: "时间轴缩放",
+          zoomAria: "时间轴缩放",
+          svgAria: "中国历史长河时间轴（竖向）",
+          hint:
+            "提示：页面向下滚动即顺流而下进入更近的时代；左侧竖向滑块可拉长或压缩整条时间河（窄屏下为横向滑块）。点击河中朝代可打开简介弹窗。",
+          modalTitle: "当前选中",
+          modalPlaceholder: "（请点击河中任一朝代）",
+          modalIntro:
+            "自上而下，上古在川首、当代在川尾；每一段色带对应一个历史阶段，波纹象征岁月推移。年代为学界常用近似范围，仅供通览。",
+          closeAria: "关闭",
+          present: "至今（图示）",
+          langGroupAria: "语言切换"
+        },
+        en: {
+          pageTitle: "Chinese History Timeline",
+          title: "River of Chinese History",
+          subtitle:
+            "From legendary and early dynasties to the present, time flows downward like a river. Use the zoom bar on the left, scroll to explore, and click any period in the river to open a short description in a dialog.",
+          zoomLabel: "Zoom",
+          zoomAria: "Timeline zoom",
+          svgAria: "Chinese history timeline (vertical)",
+          hint:
+            "Tip: Scroll down the page to move forward in time. The slider on the left stretches or compresses the timeline (horizontal on narrow screens). Click a period to open the dialog.",
+          modalTitle: "Selection",
+          modalPlaceholder: "(Click a period in the river)",
+          modalIntro:
+            "Ancient times are at the top and the present at the bottom. Each band is a historical phase; ripples suggest the passage of time. Dates are approximate for overview only.",
+          closeAria: "Close",
+          present: "present (chart)",
+          langGroupAria: "Language"
+        }
+      };
+
+      const DYNASTIES = [
+        {
+          nameZh: "夏",
+          nameEn: "Xia",
+          start: -2070,
+          end: -1600,
+          color: "#8b7355",
+          blurbZh: "传统史书中的第一个世袭王朝，考古以二里头文化等为重要线索。",
+          blurbEn:
+            "The first hereditary dynasty in traditional histories; archaeology often links it to the Erlitou culture and related sites."
+        },
+        {
+          nameZh: "商",
+          nameEn: "Shang",
+          start: -1600,
+          end: -1046,
+          color: "#a67c52",
+          blurbZh: "青铜文明高度发达，甲骨文与殷墟是重要遗产。",
+          blurbEn: "Advanced bronze civilization; oracle bone script and the Yinxu ruins are major legacies."
+        },
+        {
+          nameZh: "西周",
+          nameEn: "Western Zhou",
+          start: -1046,
+          end: -771,
+          color: "#7d8f6b",
+          blurbZh: "分封与宗法制，礼乐文化奠基。",
+          blurbEn: "Feudal enfeoffment and clan order; rites and music laid cultural foundations."
+        },
+        {
+          nameZh: "东周（春秋战国）",
+          nameEn: "Eastern Zhou (Spring & Autumn–Warring States)",
+          start: -770,
+          end: -221,
+          color: "#6b8f7a",
+          blurbZh: "王室衰微，诸侯争霸至七雄并立，百家争鸣。",
+          blurbEn:
+            "Royal power declined; lords competed until the seven powers; the Hundred Schools of Thought flourished."
+        },
+        {
+          nameZh: "秦",
+          nameEn: "Qin",
+          start: -221,
+          end: -207,
+          color: "#5c6b7a",
+          blurbZh: "首次建立中央集权的大一统帝国，书同文、车同轨。",
+          blurbEn: "First centralized empire; unified script, axle widths, and measures."
+        },
+        {
+          nameZh: "西汉",
+          nameEn: "Western Han",
+          start: -202,
+          end: 8,
+          color: "#c45c4a",
+          blurbZh: "国力强盛，丝绸之路开通，儒学成为正统思想之一。",
+          blurbEn: "Strong state; the Silk Road; Confucianism became a dominant state ideology."
+        },
+        {
+          nameZh: "东汉",
+          nameEn: "Eastern Han",
+          start: 25,
+          end: 220,
+          color: "#d0705a",
+          blurbZh: "光武中兴，佛教传入，造纸术等重要技术推广。",
+          blurbEn: "Guangwu restoration; Buddhism spread; papermaking and other techniques advanced."
+        },
+        {
+          nameZh: "三国",
+          nameEn: "Three Kingdoms",
+          start: 220,
+          end: 280,
+          color: "#8b6f9e",
+          blurbZh: "魏蜀吴鼎立，战乱频仍亦催生丰富文史与军事遗产。",
+          blurbEn: "Wei, Shu, and Wu; constant warfare yet rich literature and military lore."
+        },
+        {
+          nameZh: "西晋",
+          nameEn: "Western Jin",
+          start: 265,
+          end: 316,
+          color: "#7a8aaf",
+          blurbZh: "短期统一后陷入八王之乱与边疆动荡。",
+          blurbEn: "Brief reunification, then the War of the Eight Princes and frontier turmoil."
+        },
+        {
+          nameZh: "东晋十六国",
+          nameEn: "Eastern Jin & Sixteen Kingdoms",
+          start: 317,
+          end: 420,
+          color: "#6a7a9a",
+          blurbZh: "南北分裂开端，北方政权更迭频繁，南方偏安江左。",
+          blurbEn: "North–South split began; frequent regime change in the north; south ruled from the lower Yangzi."
+        },
+        {
+          nameZh: "南北朝",
+          nameEn: "Northern & Southern Dynasties",
+          start: 420,
+          end: 589,
+          color: "#5a7a9a",
+          blurbZh: "南北对峙，民族融合加深，为隋唐统一蓄力。",
+          blurbEn: "Long confrontation; deeper ethnic blending; prelude to Sui–Tang reunification."
+        },
+        {
+          nameZh: "隋",
+          nameEn: "Sui",
+          start: 581,
+          end: 618,
+          color: "#7a9a8a",
+          blurbZh: "再统南北，开凿大运河，制度上承前启后。",
+          blurbEn: "Reunified north and south; Grand Canal; institutions bridging earlier and later empires."
+        },
+        {
+          nameZh: "唐",
+          nameEn: "Tang",
+          start: 618,
+          end: 907,
+          color: "#c9a227",
+          blurbZh: "开放强盛，诗歌、艺术与对外交流达高峰。",
+          blurbEn: "Open, powerful age; peaks in poetry, art, and foreign contact."
+        },
+        {
+          nameZh: "五代十国",
+          nameEn: "Five Dynasties & Ten Kingdoms",
+          start: 907,
+          end: 960,
+          color: "#9a8a7a",
+          blurbZh: "政权更迭迅速，南方经济文化持续发展。",
+          blurbEn: "Rapid political turnover; sustained growth in the south’s economy and culture."
+        },
+        {
+          nameZh: "北宋",
+          nameEn: "Northern Song",
+          start: 960,
+          end: 1127,
+          color: "#6a8aaf",
+          blurbZh: "文治突出，商业与科技（如活字印刷）活跃。",
+          blurbEn: "Civil governance; vibrant commerce and technology (e.g. movable type)."
+        },
+        {
+          nameZh: "南宋",
+          nameEn: "Southern Song",
+          start: 1127,
+          end: 1279,
+          color: "#5a7aaf",
+          blurbZh: "偏安江南，经济重心南移，理学发展。",
+          blurbEn: "Capital in the south; economic center shifted; Neo-Confucianism developed."
+        },
+        {
+          nameZh: "元",
+          nameEn: "Yuan",
+          start: 1271,
+          end: 1368,
+          color: "#8a7a5a",
+          blurbZh: "疆域辽阔，多民族统一，中外交流频繁。",
+          blurbEn: "Vast realm; multi-ethnic rule under the Mongols; busy East–West exchange."
+        },
+        {
+          nameZh: "明",
+          nameEn: "Ming",
+          start: 1368,
+          end: 1644,
+          color: "#c45a4a",
+          blurbZh: "恢复汉人政权，郑和下西洋，长城与紫禁城等工程闻名。",
+          blurbEn:
+            "Han-led restoration; Zheng He’s voyages; famous works like the Great Wall and Forbidden City."
+        },
+        {
+          nameZh: "清",
+          nameEn: "Qing",
+          start: 1644,
+          end: 1912,
+          color: "#4a6a8a",
+          blurbZh: "最后帝制王朝，前期巩固疆域，晚清面临内忧外患与变革。",
+          blurbEn:
+            "Last imperial dynasty; early consolidation; late Qing faced crises and forced reform."
+        },
+        {
+          nameZh: "中华民国",
+          nameEn: "Republic of China",
+          start: 1912,
+          end: 1949,
+          color: "#6a6a7a",
+          blurbZh: "共和肇建，战乱与建设交织，社会剧烈转型。",
+          blurbEn: "Republic founded; war and rebuilding intertwined; rapid social change."
+        },
+        {
+          nameZh: "中华人民共和国",
+          nameEn: "People’s Republic of China",
+          start: 1949,
+          end: 2026,
+          color: "#2d6b7f",
+          blurbZh: "人民共和国成立至今，国家建设与现代化持续推进。（展示终点为当前年份）",
+          blurbEn:
+            "From founding to today—state-building and modernization continue. (End year is illustrative for this chart.)"
+        }
+      ];
+
+      const START = -2100;
+      const END = 2030;
+      /** 与脚本计算一致：河道可用纵向区间 */
+      const RIVER_TOP = 130;
+      const RIVER_BOT = 3510;
+
+      const ticksG = document.getElementById("ticks");
+      const dynG = document.getElementById("dynasties");
+      const nameEl = document.getElementById("d-name");
+      const yearsEl = document.getElementById("d-years");
+      const blurbEl = document.getElementById("d-blurb");
+      const host = document.getElementById("host");
+      const zoom = document.getElementById("zoom");
+      const riverSvg = document.getElementById("riverSvg");
+      const detailDialog = document.getElementById("detailDialog");
+      const detailDialogClose = document.getElementById("detailDialogClose");
+      const uiTitle = document.getElementById("uiTitle");
+      const uiSubtitle = document.getElementById("uiSubtitle");
+      const uiZoomLabel = document.getElementById("uiZoomLabel");
+      const uiHint = document.getElementById("uiHint");
+      const detailTitleEl = document.getElementById("detailTitle");
+      const langZhBtn = document.getElementById("langZh");
+      const langEnBtn = document.getElementById("langEn");
+      const LANG_STORAGE = "historyRiverLang";
+      let lang = localStorage.getItem(LANG_STORAGE) === "en" ? "en" : "zh";
+      let lastDynasty = null;
+
+      function openDetailModal() {
+        if (detailDialog && typeof detailDialog.showModal === "function") {
+          detailDialog.showModal();
+        }
+      }
+
+      function closeDetailModal() {
+        if (detailDialog && typeof detailDialog.close === "function") {
+          detailDialog.close();
+        }
+      }
+
+      if (detailDialogClose) {
+        detailDialogClose.addEventListener("click", closeDetailModal);
+      }
+
+      if (detailDialog) {
+        detailDialog.addEventListener("click", function (e) {
+          if (!e.target.closest(".detail-modal__panel")) {
+            closeDetailModal();
+          }
+        });
+      }
+
+      function applyStaticUi() {
+        const s = STR[lang];
+        document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+        document.body.classList.toggle("lang-en", lang === "en");
+        document.title = s.pageTitle;
+        if (uiTitle) uiTitle.textContent = s.title;
+        if (uiSubtitle) uiSubtitle.textContent = s.subtitle;
+        if (uiZoomLabel) uiZoomLabel.textContent = s.zoomLabel;
+        if (zoom) zoom.setAttribute("aria-label", s.zoomAria);
+        if (riverSvg) riverSvg.setAttribute("aria-label", s.svgAria);
+        if (detailDialogClose) detailDialogClose.setAttribute("aria-label", s.closeAria);
+        if (detailTitleEl) detailTitleEl.textContent = s.modalTitle;
+        if (uiHint) uiHint.textContent = s.hint;
+        if (langZhBtn) langZhBtn.setAttribute("aria-pressed", lang === "zh" ? "true" : "false");
+        if (langEnBtn) langEnBtn.setAttribute("aria-pressed", lang === "en" ? "true" : "false");
+        const langBar = document.querySelector(".lang-bar");
+        if (langBar) langBar.setAttribute("aria-label", s.langGroupAria);
+      }
+
+      function dynName(d) {
+        return lang === "zh" ? d.nameZh : d.nameEn;
+      }
+
+      function fillDetail(d) {
+        nameEl.textContent = dynName(d);
+        yearsEl.textContent = formatRange(d);
+        blurbEl.textContent = lang === "zh" ? d.blurbZh : d.blurbEn;
+      }
+
+      function fillDefaultModal() {
+        nameEl.textContent = STR[lang].modalPlaceholder;
+        yearsEl.textContent = "";
+        blurbEl.textContent = STR[lang].modalIntro;
+      }
+
+      function setLang(next) {
+        lang = next;
+        try {
+          localStorage.setItem(LANG_STORAGE, lang);
+        } catch (e) {}
+        applyStaticUi();
+        buildTicks();
+        buildDynasties();
+        scheduleApplyZoom();
+        if (lastDynasty) {
+          fillDetail(lastDynasty);
+        } else {
+          fillDefaultModal();
+        }
+      }
+
+      function yearToY(yr) {
+        return RIVER_TOP + ((yr - START) / (END - START)) * (RIVER_BOT - RIVER_TOP);
+      }
+
+      function formatYear(y) {
+        if (lang === "zh") {
+          if (y < 0) return "公元前 " + Math.abs(y) + " 年";
+          if (y === 0) return "公元 1 年";
+          return "公元 " + y + " 年";
+        }
+        if (y < 0) return Math.abs(y) + " BC";
+        if (y === 0) return "1 AD";
+        return y + " AD";
+      }
+
+      function formatRange(d) {
+        const endStr = d.end >= 2025 ? STR[lang].present : formatYear(d.end);
+        return formatYear(d.start) + " — " + endStr;
+      }
+
+      function riverLabelText(d, h) {
+        const name = dynName(d);
+        if (lang === "zh") {
+          if (h < 52 && name.length > 6) {
+            return name.replace(/（.+）/, "").slice(0, 4) || name.slice(0, 4) + "…";
+          }
+          return name;
+        }
+        return name;
+      }
+
+      /** 英文全称显示：按色块高度与名称长度缩小字号，避免截断 */
+      function dynLabelFontScale(d, h, bandWidth) {
+        if (lang !== "en") return 1;
+        const name = dynName(d);
+        const L = name.length;
+        let pw = riverSvg ? riverSvg.getBoundingClientRect().width : 0;
+        if (!pw) pw = hostWidthPx();
+        const sx = pw / 560;
+        if (sx <= 0) return 1;
+        const baseFontUser = 12 / sx;
+        const maxFromH = h / (1.32 * baseFontUser);
+        const maxFromW = (bandWidth * 0.86) / (Math.max(L, 5) * 0.5 * baseFontUser);
+        let scale = Math.min(1, maxFromH, maxFromW);
+        return Math.max(0.28, Math.min(1, scale));
+      }
+
+      /** 河道中心线近似 x，用于对齐色带 */
+      function riverCenterX(y) {
+        const t = (y - RIVER_TOP) / (RIVER_BOT - RIVER_TOP);
+        return 278 + Math.sin(t * Math.PI * 4.2) * 10;
+      }
+      function riverHalfWidth(y) {
+        const t = (y - RIVER_TOP) / (RIVER_BOT - RIVER_TOP);
+        return 132 + Math.sin(t * Math.PI * 3.1) * 6;
+      }
+
+      function buildTicks() {
+        ticksG.innerHTML = "";
+        const step = 500;
+        const NS = "http://www.w3.org/2000/svg";
+        for (let yr = Math.ceil(START / step) * step; yr <= END; yr += step) {
+          if (yr === 0) continue;
+          const y = yearToY(yr);
+          const line = document.createElementNS(NS, "line");
+          line.setAttribute("x1", "24");
+          line.setAttribute("x2", "536");
+          line.setAttribute("y1", y);
+          line.setAttribute("y2", y);
+          line.setAttribute("stroke", "rgba(255,255,255,0.28)");
+          line.setAttribute("stroke-width", "1");
+          line.setAttribute("vector-effect", "non-scaling-stroke");
+          ticksG.appendChild(line);
+          const wrap = document.createElementNS(NS, "g");
+          wrap.setAttribute("class", "tick-label");
+          const text = document.createElementNS(NS, "text");
+          text.setAttribute("x", "28");
+          text.setAttribute("y", y - 6);
+          text.setAttribute("class", "year-tick");
+          text.textContent =
+            yr < 0
+              ? lang === "zh"
+                ? "前 " + Math.abs(yr) + " 年"
+                : Math.abs(yr) + " BC"
+              : lang === "zh"
+                ? yr + " 年"
+                : yr + " AD";
+          wrap.appendChild(text);
+          ticksG.appendChild(wrap);
+        }
+      }
+
+      function buildDynasties() {
+        dynG.innerHTML = "";
+        DYNASTIES.forEach(function (d) {
+          let y1 = yearToY(d.start);
+          let y2 = yearToY(d.end);
+          if (y2 < y1) {
+            const t = y1;
+            y1 = y2;
+            y2 = t;
+          }
+          const h = Math.max(y2 - y1, 14);
+          const cy = (y1 + y2) / 2;
+          const cx = riverCenterX(cy);
+          const halfW = riverHalfWidth(cy) - 18;
+          const w = Math.max(halfW * 2, 120);
+          const x = cx - w / 2;
+
+          const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          g.setAttribute("class", "dynasty-hit");
+          g.setAttribute("tabindex", "0");
+          g.setAttribute("role", "button");
+          g.setAttribute("aria-label", dynName(d) + " " + formatRange(d));
+
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", x);
+          rect.setAttribute("y", y1);
+          rect.setAttribute("width", w);
+          rect.setAttribute("height", h);
+          rect.setAttribute("rx", "8");
+          rect.setAttribute("fill", d.color);
+          rect.setAttribute("fill-opacity", "0.74");
+          rect.setAttribute("stroke", "rgba(255,255,255,0.38)");
+          rect.setAttribute("stroke-width", "1");
+
+          const labelWrap = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          labelWrap.setAttribute("class", "dyn-label-wrap");
+          const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          label.setAttribute("x", cx);
+          label.setAttribute("y", y1 + h / 2);
+          label.setAttribute("text-anchor", "middle");
+          label.setAttribute("dominant-baseline", "middle");
+          label.setAttribute("class", "dyn-label");
+          label.setAttribute("style", "text-shadow: 0 1px 2px rgba(0,0,0,0.45); pointer-events: none;");
+          label.setAttribute("data-font-scale", String(dynLabelFontScale(d, h, w)));
+          label.textContent = riverLabelText(d, h);
+
+          g.appendChild(rect);
+          labelWrap.appendChild(label);
+          g.appendChild(labelWrap);
+
+          function select() {
+            lastDynasty = d;
+            fillDetail(d);
+            openDetailModal();
+          }
+
+          g.addEventListener("click", select);
+          g.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              select();
+            }
+          });
+
+          dynG.appendChild(g);
+        });
+      }
+
+      function hostWidthPx() {
+        const r = host.getBoundingClientRect();
+        let w = r.width || host.clientWidth || host.offsetWidth;
+        if (!w || w < 2) {
+          w = host.parentElement ? host.parentElement.getBoundingClientRect().width : 0;
+        }
+        return Math.max(280, w || Math.min(520, document.documentElement.clientWidth - 32));
+      }
+
+      /** 抵消 SVG 纵向拉伸（preserveAspectRatio=none）时的非均匀缩放，使文字在屏幕上保持约恒定像素大小 */
+      function syncTextTransforms() {
+        const rect = riverSvg.getBoundingClientRect();
+        const pw = rect.width;
+        const ph = rect.height;
+        if (!pw || !ph) return;
+        const sx = pw / 560;
+        const sy = ph / 3600;
+        const ratio = sx / sy;
+        const TICK_PX = 11;
+        const DYN_PX = 12;
+
+        ticksG.querySelectorAll(".tick-label").forEach(function (wrap) {
+          const text = wrap.querySelector("text");
+          if (!text) return;
+          const x = parseFloat(text.getAttribute("x"));
+          const y = parseFloat(text.getAttribute("y"));
+          wrap.setAttribute(
+            "transform",
+            "translate(" + x + "," + y + ") scale(1," + ratio + ") translate(" + -x + "," + -y + ")"
+          );
+          text.setAttribute("font-size", TICK_PX / sx);
+        });
+
+        dynG.querySelectorAll(".dyn-label-wrap").forEach(function (wrap) {
+          const text = wrap.querySelector("text");
+          if (!text) return;
+          const x = parseFloat(text.getAttribute("x"));
+          const y = parseFloat(text.getAttribute("y"));
+          wrap.setAttribute(
+            "transform",
+            "translate(" + x + "," + y + ") scale(1," + ratio + ") translate(" + -x + "," + -y + ")"
+          );
+          const fs = parseFloat(text.getAttribute("data-font-scale") || "1");
+          const safeFs = isNaN(fs) ? 1 : fs;
+          text.setAttribute("font-size", (DYN_PX / sx) * safeFs);
+        });
+      }
+
+      function applyZoom() {
+        const z = parseFloat(zoom.value, 10);
+        const w = hostWidthPx();
+        const baseH = (3600 / 560) * w;
+        const h = Math.max(120, Math.round(baseH * z));
+        riverSvg.style.height = h + "px";
+        riverSvg.style.width = "100%";
+        riverSvg.setAttribute("preserveAspectRatio", "none");
+        requestAnimationFrame(function () {
+          syncTextTransforms();
+        });
+      }
+
+      if (langZhBtn) {
+        langZhBtn.addEventListener("click", function () {
+          setLang("zh");
+        });
+      }
+      if (langEnBtn) {
+        langEnBtn.addEventListener("click", function () {
+          setLang("en");
+        });
+      }
+
+      applyStaticUi();
+      buildTicks();
+      buildDynasties();
+
+      function scheduleApplyZoom() {
+        requestAnimationFrame(function () {
+          applyZoom();
+        });
+      }
+
+      scheduleApplyZoom();
+      fillDefaultModal();
+
+      zoom.addEventListener("input", applyZoom);
+      zoom.addEventListener("change", applyZoom);
+      window.addEventListener("resize", scheduleApplyZoom);
+
+      if (typeof ResizeObserver !== "undefined") {
+        new ResizeObserver(scheduleApplyZoom).observe(host);
+      }
+
+      window.addEventListener("load", function () {
+        applyZoom();
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        window.scrollTo(0, maxScroll * 0.28);
+      });
+    })();
+  </script>
+</body>
+</html>
